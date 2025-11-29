@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sentiment Analysis Web App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap for nicer, mobile-friendly UI -->
+    <link
+    
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet">
+    
+</head>
+<body class="bg-light">
+<div class="container py-4">
+
+    <h1 class="mb-3">Sentiment Analysis Web App</h1>
+    <p class="text-muted">
+        Enter a movie review, choose a model, and see the predicted sentiment and probabilities.
+    </p>
+
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST" class="mb-4">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="review_text" class="form-label">Movie review</label>
+            <textarea id="review_text" name="review_text" rows="4" class="form-control"
+                      placeholder="Type or paste a review here...">{{ review }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label for="model_key" class="form-label">Choose model</label>
+            <select id="model_key" name="model_key" class="form-select">
+                <option value="" disabled selected>-- Select a model --</option>
+                {% for key, name in models.items %}
+                    <option value="{{ key }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Classify sentiment</button>
+    </form>
+
+    {% if pred_label is not None %}
+        <hr>
+        <h3>Result</h3>
+
+        <p><strong>Model:</strong> {{ model_name }}</p>
+
+        <p><strong>Predicted label:</strong>
+            {% if pred_label == 1 %}
+                <span class="badge bg-success">Positive</span>
+            {% else %}
+                <span class="badge bg-danger">Negative</span>
+            {% endif %}
+        </p>
+
+        {% if prob_neg %}
+            <p><strong>Probabilities:</strong></p>
+            <ul>
+                <li>Negative: {{ prob_neg|floatformat:3 }}</li>
+                <li>Positive: {{ prob_pos|floatformat:3 }}</li>
+            </ul>
+        {% endif %}
+            {% if model_stats %}
+                <h4 class="mt-4">Model summary</h4>
+                <ul>
+                    <li><strong>Validation accuracy:</strong> {{ model_stats.val_accuracy|floatformat:4 }}</li>
+                    <li><strong>Test accuracy:</strong> {{ model_stats.test_accuracy|floatformat:4 }}</li>
+                    <li><strong>Training time:</strong> {{ model_stats.train_time_s|floatformat:2 }} seconds</li>
+                </ul>
+        {% endif %}
+
+
+        {% if lime_explanation %}
+            <h4 class="mt-4">LIME Explanation (Top Words)</h4>
+            <p class="text-muted">
+                Positive weights push the prediction towards the positive class; 
+                negative weights push towards the negative class.
+            </p>
+
+            <table class="table table-sm table-bordered w-auto">
+                <thead>
+                    <tr>
+                        <th>Word</th>
+                        <th>Contribution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in lime_explanation %}
+                        <tr>
+                            <td>{{ item.word }}</td>
+                            <td>{{ item.weight|floatformat:3 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    {% endif %}
+
+</div>
+</body>
+</html>
